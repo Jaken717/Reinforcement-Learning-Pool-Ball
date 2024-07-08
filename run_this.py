@@ -17,8 +17,6 @@ else:
     print("wrong")
     exit()
 
-
-
 #set parameters
 num_episode = 1500 #total times
 gamma = 0.9
@@ -29,8 +27,8 @@ return_list = [] #kepp the return value for each rounds
 
 #environment loade
 env = poolenv()
-state_dim = (3, 17, 37)
-action_dim = 15 * 6 * 3 * 2
+state_dim = (4, 18, 38)
+action_dim = 15 * 6 * 3 * 3
 
 #Model Initialization
 agent = ActorCritic(in_channels=state_dim[0],
@@ -57,10 +55,11 @@ for i in range(num_episode):
     }
 
     while not done:
-        action = agent.take_action(state=state)
+        action, action_number = agent.take_action(state=state)
+        print(f"Action taken: {action.target_ball}, {action.target_hole}, {action.angle}, {action.power}")
         next_state, reward, done= env.step(action)
         transidion_dict['states'].append(state)
-        transidion_dict['actions'].append(action)
+        transidion_dict['actions'].append(action_number)
         transidion_dict['next_states'].append(next_state)
         transidion_dict['rewards'].append(reward)
         transidion_dict['dones'].append(done)
@@ -71,6 +70,8 @@ for i in range(num_episode):
     agent.update(transidion_dict)
 
     print(f'iter: {i}, return:{np.mean(return_list[-10:])}')
+
+env.close()
 
 #Plot results
 plt.plot(return_list)

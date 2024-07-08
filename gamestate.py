@@ -30,6 +30,7 @@ class GameState:
         zope.event.subscribers.append(self.game_event_handler)
         self.canvas = graphics.Canvas()
         self.fps_clock = pygame.time.Clock()
+        # self.white_ball_1st_hit_is_set = False
 
     def fps(self):
         return self.fps_clock.get_fps()
@@ -49,15 +50,33 @@ class GameState:
         self.balls.add(self.white_ball)
         self.all_sprites.add(self.white_ball)
 
+    # def game_event_handler(self, event):
+    #     if event.type == "POTTED":
+    #         self.table_coloring.update(self)
+    #         self.balls.remove(event.data)
+    #         self.all_sprites.remove(event.data)
+    #         self.potted.append(event.data.number)
+    #     elif event.type == "COLLISION":
+    #         if not self.white_ball_1st_hit_is_set:
+    #             self.first_collision(event.data)
     def game_event_handler(self, event):
+        # print("Handling game event:", event.type)
+        # if not hasattr(self, 'white_ball_1st_hit_is_set'):
+        #     print("Error: 'white_ball_1st_hit_is_set' attribute is missing")
+        # print(f'game_event_handler white ball 1st hit is set is {self.white_ball_1st_hit_is_set}')
+        # print(id(self))
+        # print(f'game_event_handler table coloring is  {self.table_coloring}')
         if event.type == "POTTED":
             self.table_coloring.update(self)
             self.balls.remove(event.data)
             self.all_sprites.remove(event.data)
             self.potted.append(event.data.number)
         elif event.type == "COLLISION":
+            if not hasattr(self, 'white_ball_1st_hit_is_set'):
+                print("Error: 'white_ball_1st_hit_is_set' attribute is missing during collision handling")
             if not self.white_ball_1st_hit_is_set:
                 self.first_collision(event.data)
+
 
     def set_pool_balls(self):
         counter = [0, 0]
@@ -92,9 +111,11 @@ class GameState:
 
     def reset_state(self):
         # game state variables
+        # print("reset\n")
         self.current_player = Player.Player1
         self.turn_ended = True
         self.white_ball_1st_hit_is_set = False
+        # print(f"white ball 1st hit is set {self.white_ball_1st_hit_is_set}\n")
         self.potted = []
         self.balls = pygame.sprite.Group()
         self.holes = pygame.sprite.Group()
@@ -192,11 +213,11 @@ class GameState:
         self.canvas.surface.blit(rendered_text, (config.resolution - font.size(text)) / 2)
         pygame.display.flip()
         pygame.event.clear()
-        paused = True
-        while paused:
-            event = pygame.event.wait()
-            if event.type == pygame.QUIT or event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
-                paused = False
+        # paused = True
+        # while paused:
+        #     event = pygame.event.wait()
+        #     if event.type == pygame.QUIT or event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+        #         paused = False
         self.is_game_over = True
 
     def turn_over(self, penalize):
@@ -211,17 +232,23 @@ class GameState:
             self.can_move_white_ball = True
 
     def check_potted(self):
+        potted = False
+        p1_won = False
         self.can_move_white_ball = False  # if white ball is potted, it will be created again and placed in the middle
         if 0 in self.potted:
             self.create_white_ball()
             self.cue.target_ball = self.white_ball
             self.potted.remove(0)
             self.turn_over(True)
+            potted = True
         if 8 in self.potted:
             if self.potting_8ball[self.current_player]:
                 self.game_over(self.current_player == Player.Player1)
+                p1_won = True
             else:
                 self.game_over(self.current_player != Player.Player1)
+                p1_won = False
+        return potted, p1_won
 
     def check_remaining(self):
         # a check if all striped or solid balls were potted
@@ -248,10 +275,15 @@ class GameState:
     def check_pool_rules(self):
         if self.ball_assignment is not None:
             self.check_remaining()
-        self.check_potted()
-        self.first_hit_rule()
+        potted, p1_won = self.check_potted()
+        first_hit = self.first_hit_rule()
         self.potted_ball_rules()
         self.on_next_hit()
+        if potted == True or first_hit == True:
+            penalize = True
+        else:
+            penalize = False
+        return penalize, p1_won
 
     def on_next_hit(self):
         self.white_ball_1st_hit_is_set = False
@@ -283,19 +315,23 @@ class GameState:
             self.turn_over(False)
 
     def first_hit_rule(self):
+        first_hit = False
         # checks if the 1st white ball hit is the same as the players target ball type
         # for example if the current player hits a striped ball with the whit ball
         # but he should be potting solid balls, it is next players turn and he can move the white ball
         if not self.white_ball_1st_hit_is_set:
             self.turn_over(True)
+            first_hit = True
         elif self.ball_assignment is not None:
             if not self.white_ball_1st_hit_8ball and self.ball_assignment[
                 self.current_player] != self.white_ball_1st_hit_type:
                 self.turn_over(True)
+                first_hit = True
             # checks if the 8ball was the first ball hit, and if so checks if the player needs to pot the 8ball
             # and if not he gets penalised
             elif self.white_ball_1st_hit_8ball:
                 self.turn_over(not self.potting_8ball[self.current_player])
+        return first_hit
 
     def get_player_ball_type(self, player):
         if self.ball_assignment is None:

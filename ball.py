@@ -169,17 +169,18 @@ class BallSprite(pygame.sprite.Sprite):
         game_state.cue.make_invisible()
         events = event.events()
 
-        while events["clicked"]:
-            events = event.events()
-            # checks if the user isn't trying to place the ball out of the table or inside another ball
-            if np.all(np.less(config.table_margin + config.ball_radius + config.hole_radius, events["mouse_pos"])) and \
-                    np.all(np.greater(config.resolution - config.table_margin - config.ball_radius - config.hole_radius,
-                                      events["mouse_pos"])) and \
-                    not collisions.check_if_ball_touches_balls(events["mouse_pos"], self.number, game_state.balls):
-                if behind_separation_line:
-                    if events["mouse_pos"][0] <= config.white_ball_initial_pos[0]:
-                        self.move_to(events["mouse_pos"])
-                else:
-                    self.move_to(events["mouse_pos"])
-            game_state.redraw_all()
+        # while events["clicked"]:
+        #     events = event.events()
+        #     # checks if the user isn't trying to place the ball out of the table or inside another ball
+        #     if np.all(np.less(config.table_margin + config.ball_radius + config.hole_radius, events["mouse_pos"])) and \
+        #             np.all(np.greater(config.resolution - config.table_margin - config.ball_radius - config.hole_radius,
+        #                               events["mouse_pos"])) and \
+        #             not collisions.check_if_ball_touches_balls(events["mouse_pos"], self.number, game_state.balls):
+        #         if behind_separation_line:
+        #             if events["mouse_pos"][0] <= config.white_ball_initial_pos[0]:
+        #                 self.move_to(events["mouse_pos"])
+        #         else:
+        #             self.move_to(events["mouse_pos"])
+        #     game_state.redraw_all()
+        self.move_to(config.white_ball_initial_pos)
         game_state.cue.make_visible(game_state.current_player)

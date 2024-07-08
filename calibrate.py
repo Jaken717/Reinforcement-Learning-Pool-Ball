@@ -24,7 +24,9 @@ import table_sprites
 def get_cue_angle(game_state, number, target_hole):
     target_position = (0,0)
     cue_ball_position = (0,0)
+    print(f"balls in the list {len(game_state.balls)}\n")
     for ball in game_state.balls:
+        # print(f'ball number {ball.number}, position {ball.ball.pos}\n')
         if ball.number == number:
             target_position = ball.ball.pos
         if ball.number == 0:
@@ -50,7 +52,7 @@ def get_cue_angle(game_state, number, target_hole):
 
     cue_angle = physics.get_line_angle(cue_ball_pos, tangent_ball_pos)
 
-    print(f"target ball {number} locates at {target_position}, tangent ball locates at {tangent_ball_pos}, aiming at pocket location {target_hole}, with angle{math.degrees(cue_angle)}\n")
+    # print(f"cue ball is at {cue_ball_pos}, target ball {number} locates at {target_position}, tangent ball locates at {tangent_ball_pos}, aiming at pocket location {target_hole}, with angle{math.degrees(cue_angle)}\n")
 
     return cue_angle
     

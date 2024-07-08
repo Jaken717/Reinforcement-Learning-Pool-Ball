@@ -24,7 +24,7 @@ fullscreen = False
 if not fullscreen:
     resolution = np.array([1000, 500])
 window_caption = "Pool"
-fps_limit = 60
+fps_limit = 1000
 
 # table settings
 table_margin = 40
