@@ -24,7 +24,7 @@ import table_sprites
 def get_cue_angle(game_state, number, target_hole):
     target_position = (0,0)
     cue_ball_position = (0,0)
-    print(f"balls in the list {len(game_state.balls)}\n")
+    # print(f"balls in the list {len(game_state.balls)}\n")
     for ball in game_state.balls:
         # print(f'ball number {ball.number}, position {ball.ball.pos}\n')
         if ball.number == number:

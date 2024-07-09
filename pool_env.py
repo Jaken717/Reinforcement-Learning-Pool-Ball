@@ -56,29 +56,29 @@ class poolenv:
         self.game.cue.cue_is_active(self.game, target_ball=action.target_ball, target_hole_num=action.target_hole,adjust_angle=action.angle,power=action.power)
 
     def _get_state(self):
-        matrix_stripes = np.zeros((38,18), dtype = int)
-        matrix_solid = np.zeros((38,18), dtype = int)
-        matrix_black = np.zeros((38,18), dtype = int)
-        matrix_player = np.zeros((38,18), dtype = int)
+        matrix_stripes = np.zeros((39,19), dtype = int)
+        matrix_solid = np.zeros((39,19), dtype = int)
+        matrix_black = np.zeros((39,19), dtype = int)
+        matrix_player = np.zeros((39,19), dtype = int)
 
         for ball in self.game.balls:
             if ball.number > 8:
-                x_unit = round(ball.ball.pos[0]/25) - 1
-                y_unit = round(ball.ball.pos[1]/25) - 1
+                x_unit = round(ball.ball.pos[0]/25)
+                y_unit = round(ball.ball.pos[1]/25)
 
                 matrix_stripes[x_unit,y_unit] = ball.number
                 if self.game.ball_assignment != None and self.game.ball_assignment[self.game.current_player] == BallType.Striped:
                     matrix_player[x_unit,y_unit] = 1
             elif ball.number < 8:
-                x_unit = round(ball.ball.pos[0]/25) - 1
-                y_unit = round(ball.ball.pos[1]/25) - 1
+                x_unit = round(ball.ball.pos[0]/25)
+                y_unit = round(ball.ball.pos[1]/25)
 
                 matrix_solid[x_unit,y_unit] = ball.number
                 if self.game.ball_assignment != None and self.game.ball_assignment[self.game.current_player] == BallType.Solid:
                     matrix_player[x_unit,y_unit] = 1
             elif ball.number == 8:
-                x_unit = round(ball.ball.pos[0]/25) - 1
-                y_unit = round(ball.ball.pos[1]/25) - 1
+                x_unit = round(ball.ball.pos[0]/25)
+                y_unit = round(ball.ball.pos[1]/25)
 
                 matrix_black[x_unit,y_unit] = ball.number
                 if self.game.potting_8ball[self.game.current_player]:
@@ -113,7 +113,7 @@ class poolenv:
                 if prev_ball.number not in [ball.number for ball in self.game.balls]:
                     # Ball was potted
                     if (target_type == "Striped" and prev_ball.number > 8) or (target_type == "Solid" and prev_ball.number < 8):
-                        reward += 10  # Correct ball type potted
+                        reward += 200  # Correct ball type potted
                     else:
                         reward -= 5  # Incorrect ball type potted
             
