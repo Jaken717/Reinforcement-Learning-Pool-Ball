@@ -21,7 +21,7 @@ def revise_action_number(action):
             for a in range(3):
                 for p in range(3):
                     i += 1
-                    angle_val = {0: -5, 1: 0, 2: 5}.get(a)
+                    angle_val = {0: -3, 1: 0, 2: 3}.get(a)
                     power_val = {0: 3, 1: 5, 2: 7}.get(p)
                     if (action.target_ball == tb + 1 and
                         action.target_hole == th and
@@ -33,7 +33,7 @@ def calibrate_by_rule(action, last_action, game_state):
     ball_found = False
     valid_balls = []
     holes = [0, 1, 2, 3, 4, 5]
-    angles = [-5, 0, 5]
+    angles = [-3, 0, 3]
     powers = [3, 5, 7]
 
     # if game_state.ball_assignment:

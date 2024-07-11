@@ -55,38 +55,72 @@ class poolenv:
     def _apply_action(self,action):
         self.game.cue.cue_is_active(self.game, target_ball=action.target_ball, target_hole_num=action.target_hole,adjust_angle=action.angle,power=action.power)
 
+    # def _get_state(self):
+    #     matrix_stripes = np.zeros((39, 19), dtype=int)
+    #     matrix_solid = np.zeros((39, 19), dtype=int)
+    #     matrix_black = np.zeros((39, 19), dtype=int)
+    #     matrix_player = np.zeros((39, 19), dtype=int)
+
+    #     for ball in self.game.balls:
+    #         if ball.number > 8:
+    #             x_unit = round(ball.ball.pos[0] / 25)
+    #             y_unit = round(ball.ball.pos[1] / 25)
+
+    #             matrix_stripes[x_unit, y_unit] = ball.number
+    #             if self.game.ball_assignment != None and self.game.ball_assignment[self.game.current_player] == BallType.Striped:
+    #                 matrix_player[x_unit, y_unit] = 1
+    #         elif ball.number < 8:
+    #             x_unit = round(ball.ball.pos[0] / 25)
+    #             y_unit = round(ball.ball.pos[1] / 25)
+
+    #             matrix_solid[x_unit, y_unit] = ball.number
+    #             if self.game.ball_assignment != None and self.game.ball_assignment[self.game.current_player] == BallType.Solid:
+    #                 matrix_player[x_unit, y_unit] = 1
+    #         elif ball.number == 8:
+    #             x_unit = round(ball.ball.pos[0] / 25)
+    #             y_unit = round(ball.ball.pos[1] / 25)
+
+    #             matrix_black[x_unit, y_unit] = ball.number
+    #             if self.game.potting_8ball[self.game.current_player]:
+    #                 matrix_player[x_unit, y_unit] = 1
+
+    #     combined_matrix = np.stack((matrix_stripes, matrix_solid, matrix_black, matrix_player), axis=-1)
+
+    #     # Replace NaNs with zeros
+    #     combined_matrix = np.nan_to_num(combined_matrix, nan=0)
+
+    #     return combined_matrix
+
     def _get_state(self):
-        matrix_stripes = np.zeros((39,19), dtype = int)
-        matrix_solid = np.zeros((39,19), dtype = int)
-        matrix_black = np.zeros((39,19), dtype = int)
-        matrix_player = np.zeros((39,19), dtype = int)
+        matrix_stripes = np.zeros((39, 19), dtype=int)
+        matrix_solid = np.zeros((39, 19), dtype=int)
+        matrix_black = np.zeros((39, 19), dtype=int)
+        matrix_player = np.zeros((39, 19), dtype=int)
 
         for ball in self.game.balls:
+            x_unit = max(0, min(38, round(ball.ball.pos[0] / 25)))
+            y_unit = max(0, min(18, round(ball.ball.pos[1] / 25)))
+
             if ball.number > 8:
-                x_unit = round(ball.ball.pos[0]/25)
-                y_unit = round(ball.ball.pos[1]/25)
-
-                matrix_stripes[x_unit,y_unit] = ball.number
-                if self.game.ball_assignment != None and self.game.ball_assignment[self.game.current_player] == BallType.Striped:
-                    matrix_player[x_unit,y_unit] = 1
+                matrix_stripes[x_unit, y_unit] = ball.number
+                if self.game.ball_assignment is not None and self.game.ball_assignment[self.game.current_player] == BallType.Striped:
+                    matrix_player[x_unit, y_unit] = 1
             elif ball.number < 8:
-                x_unit = round(ball.ball.pos[0]/25)
-                y_unit = round(ball.ball.pos[1]/25)
-
-                matrix_solid[x_unit,y_unit] = ball.number
-                if self.game.ball_assignment != None and self.game.ball_assignment[self.game.current_player] == BallType.Solid:
-                    matrix_player[x_unit,y_unit] = 1
+                matrix_solid[x_unit, y_unit] = ball.number
+                if self.game.ball_assignment is not None and self.game.ball_assignment[self.game.current_player] == BallType.Solid:
+                    matrix_player[x_unit, y_unit] = 1
             elif ball.number == 8:
-                x_unit = round(ball.ball.pos[0]/25)
-                y_unit = round(ball.ball.pos[1]/25)
-
-                matrix_black[x_unit,y_unit] = ball.number
+                matrix_black[x_unit, y_unit] = ball.number
                 if self.game.potting_8ball[self.game.current_player]:
-                    matrix_player[x_unit,y_unit] = 1
-        
+                    matrix_player[x_unit, y_unit] = 1
+
         combined_matrix = np.stack((matrix_stripes, matrix_solid, matrix_black, matrix_player), axis=-1)
 
+        # Replace NaNs with zeros
+        combined_matrix = np.nan_to_num(combined_matrix, nan=0)
+
         return combined_matrix
+
     
     # matrix_stripes = combined_matrix[:, :, 0]
     # matrix_solid = combined_matrix[:, :, 1]
@@ -101,12 +135,12 @@ class poolenv:
                 if p1_won:
                     return 100
                 else:
-                    return -100
+                    return -2000
             else:
                 if not p1_won:
                     return 100
                 else:
-                    return -100
+                    return -2000
         else:
             target_type = self.game.get_player_ball_type(self.game.current_player)
             for prev_ball in self.prev_balls:

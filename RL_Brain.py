@@ -172,14 +172,10 @@ class PolicyNet(nn.Module):
         self.fc2 = nn.Linear(hidden_dim, action_dim)
 
     def forward(self, x):
-        print(f"Input shape: {x.shape}")
         x = F.relu(self.bn1(self.conv1(x)))
-        print(f"After conv1 shape: {x.shape}")
         for conv_layer in self.conv_layers:
             x = conv_layer(x)
-            print(f"After conv_layer shape: {x.shape}")
         x = x.reshape(x.size(0), -1)
-        print(f"After reshape shape: {x.shape}")
         x = F.relu(self.fc1(x))
         x = F.softmax(self.fc2(x), dim=1)
         return x
@@ -201,14 +197,10 @@ class ValueNet(nn.Module):
         self.fc2 = nn.Linear(hidden_dim, 1)
 
     def forward(self, x):
-        print(f"ValueNet Input shape: {x.shape}")
         x = F.relu(self.bn1(self.conv1(x)))
-        print(f"After conv1 shape: {x.shape}")
         for conv_layer in self.conv_layers:
             x = conv_layer(x)
-            print(f"After conv_layer shape: {x.shape}")
         x = x.reshape(x.size(0), -1)
-        print(f"After reshape shape: {x.shape}")
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
         return x
@@ -231,11 +223,11 @@ class poolaction:
                             self.target_ball = tb + 1
                             self.target_hole = th
                             if a == 0:
-                                self.angle = -5
+                                self.angle = -3
                             elif a == 1:
                                 self.angle = 0
                             elif a == 2:
-                                self.angle = 5
+                                self.angle = 3
                             if p == 0:
                                 self.power = 3
                             elif p == 1:
@@ -257,7 +249,6 @@ class ActorCritic:
     def take_action(self, state):
         state = torch.tensor(state[np.newaxis, :], dtype=torch.float).to(self.device)
         state = state.permute(0, 3, 1, 2)  # Rearrange dimensions to [batch_size, channels, height, width]
-        print(f"State shape before actor: {state.shape}")
         probs = self.actor(state)
 
         # Check for NaNs and handle them
@@ -277,6 +268,30 @@ class ActorCritic:
         action.get_action(action_number=action_number)
         return action, action_number
 
+    # def update(self, transition_dict):
+    #     states = torch.tensor(np.array(transition_dict['states']), dtype=torch.float).to(self.device)
+    #     actions = torch.tensor(np.array(transition_dict['actions']), dtype=torch.int64).view(-1, 1).to(self.device)
+    #     rewards = torch.tensor(np.array(transition_dict['rewards']), dtype=torch.float).view(-1, 1).to(self.device)
+    #     next_states = torch.tensor(np.array(transition_dict['next_states']), dtype=torch.float).to(self.device)
+    #     dones = torch.tensor(np.array(transition_dict['dones']), dtype=torch.float).view(-1, 1).to(self.device)
+
+    #     states = states.permute(0, 3, 1, 2)  # Rearrange dimensions to [batch_size, channels, height, width]
+    #     next_states = next_states.permute(0, 3, 1, 2)  # Rearrange dimensions to [batch_size, channels, height, width]
+
+    #     td_value = self.critic(states)
+    #     td_target = rewards + self.gamma * self.critic(next_states) * (1 - dones)
+    #     td_delta = td_target - td_value
+
+    #     log_probs = torch.log(self.actor(states).gather(1, actions))
+    #     actor_loss = torch.mean(-log_probs * td_delta.detach())
+    #     critic_loss = torch.mean(F.mse_loss(self.critic(states), td_target.detach()))
+
+    #     self.actor_optimizer.zero_grad()
+    #     self.critic_optimizer.zero_grad()
+    #     actor_loss.backward()
+    #     critic_loss.backward()
+    #     self.actor_optimizer.step()
+    #     self.critic_optimizer.step()
     def update(self, transition_dict):
         states = torch.tensor(np.array(transition_dict['states']), dtype=torch.float).to(self.device)
         actions = torch.tensor(np.array(transition_dict['actions']), dtype=torch.int64).view(-1, 1).to(self.device)
@@ -289,13 +304,22 @@ class ActorCritic:
 
         print(f"States shape: {states.shape}")
         print(f"Actions shape: {actions.shape}")
+        print(f"Actions values: {actions}")
+
+        # Ensure actions are within valid range
+        actions = torch.clamp(actions, 0, states.shape[1] - 1)
 
         td_value = self.critic(states)
         td_target = rewards + self.gamma * self.critic(next_states) * (1 - dones)
         td_delta = td_target - td_value
 
+        print(f"TD Value shape: {td_value.shape}")
+        print(f"TD Target shape: {td_target.shape}")
+        print(f"TD Delta shape: {td_delta.shape}")
+
         log_probs = torch.log(self.actor(states).gather(1, actions))
         print(f"log_probs shape: {log_probs.shape}")
+
         actor_loss = torch.mean(-log_probs * td_delta.detach())
         critic_loss = torch.mean(F.mse_loss(self.critic(states), td_target.detach()))
 
@@ -305,3 +329,4 @@ class ActorCritic:
         critic_loss.backward()
         self.actor_optimizer.step()
         self.critic_optimizer.step()
+
