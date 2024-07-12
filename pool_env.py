@@ -92,27 +92,30 @@ class poolenv:
     #     return combined_matrix
 
     def _get_state(self):
-        matrix_stripes = np.zeros((39, 19), dtype=int)
-        matrix_solid = np.zeros((39, 19), dtype=int)
-        matrix_black = np.zeros((39, 19), dtype=int)
-        matrix_player = np.zeros((39, 19), dtype=int)
+        matrix_stripes = np.zeros((37, 17), dtype=int)
+        matrix_solid = np.zeros((37, 17), dtype=int)
+        matrix_black = np.zeros((37, 17), dtype=int)
+        matrix_player = np.zeros((37, 17), dtype=int)
+        matrix_white = np.zeros((37, 17), dtype=int)
 
+        if self.game.ball_assignment is not None and self.game.ball_assignment[self.game.current_player] == BallType.Striped:
+            matrix_player[:, :] = 0
+        elif self.game.ball_assignment is not None and self.game.ball_assignment[self.game.current_player] == BallType.Solid:
+            matrix_player[:, :] = 1
+        elif self.game.potting_8ball[self.game.current_player]:
+            matrix_player[:, :] = 8
         for ball in self.game.balls:
-            x_unit = max(0, min(38, round(ball.ball.pos[0] / 25)))
-            y_unit = max(0, min(18, round(ball.ball.pos[1] / 25)))
+            x_unit = max(0, min(37, round(ball.ball.pos[0] / 25)))
+            y_unit = max(0, min(17, round(ball.ball.pos[1] / 25)))
 
             if ball.number > 8:
-                matrix_stripes[x_unit, y_unit] = ball.number
-                if self.game.ball_assignment is not None and self.game.ball_assignment[self.game.current_player] == BallType.Striped:
-                    matrix_player[x_unit, y_unit] = 1
-            elif ball.number < 8:
-                matrix_solid[x_unit, y_unit] = ball.number
-                if self.game.ball_assignment is not None and self.game.ball_assignment[self.game.current_player] == BallType.Solid:
-                    matrix_player[x_unit, y_unit] = 1
+                matrix_stripes[x_unit, y_unit] = ball.number * 10
+            elif ball.number < 8 and ball.num != 0:
+                matrix_solid[x_unit, y_unit] = ball.number * 10
             elif ball.number == 8:
                 matrix_black[x_unit, y_unit] = ball.number
-                if self.game.potting_8ball[self.game.current_player]:
-                    matrix_player[x_unit, y_unit] = 1
+            elif ball.number == 0:
+                matrix_white[x_unit, y_unit] = 10
 
         combined_matrix = np.stack((matrix_stripes, matrix_solid, matrix_black, matrix_player), axis=-1)
 
@@ -129,16 +132,16 @@ class poolenv:
     def _calculate_reward(self, penalize, p1_won):
         reward = 0
         if penalize == True:
-            reward -= 100
+            reward -= 10
         if self.game.is_game_over:
             if self.game.current_player == gamestate.Player.Player1:
                 if p1_won:
-                    return 100
+                    return 2000
                 else:
                     return -2000
             else:
                 if not p1_won:
-                    return 100
+                    return 2000
                 else:
                     return -2000
         else:
@@ -147,7 +150,7 @@ class poolenv:
                 if prev_ball.number not in [ball.number for ball in self.game.balls]:
                     # Ball was potted
                     if (target_type == "Striped" and prev_ball.number > 8) or (target_type == "Solid" and prev_ball.number < 8):
-                        reward += 200  # Correct ball type potted
+                        reward += 500  # Correct ball type potted
                     else:
                         reward -= 5  # Incorrect ball type potted
             

@@ -13,15 +13,16 @@ from RL_Brain import poolaction
 import random
 import gamestate
 from ball import BallType
+import os
 
 def revise_action_number(action):
     i = 0
     for tb in range(15):
         for th in range(6):
-            for a in range(3):
+            for a in range(7):
                 for p in range(3):
                     i += 1
-                    angle_val = {0: -3, 1: 0, 2: 3}.get(a)
+                    angle_val = {0: -3, 1: -2, 2: -1, 3: 0, 4: 1, 5: 2, 6: 3}.get(a)
                     power_val = {0: 3, 1: 5, 2: 7}.get(p)
                     if (action.target_ball == tb + 1 and
                         action.target_hole == th and
@@ -33,7 +34,7 @@ def calibrate_by_rule(action, last_action, game_state):
     ball_found = False
     valid_balls = []
     holes = [0, 1, 2, 3, 4, 5]
-    angles = [-3, 0, 3]
+    angles = [-3, -2, -1, 0, 1, 2, 3]
     powers = [3, 5, 7]
 
     # if game_state.ball_assignment:
@@ -80,18 +81,20 @@ else:
     print("wrong")
     exit()
 
-# set parameters
-num_episode = 1500  # total times
+# Set parameters
+num_episode = 150000  # Total episodes
+save_interval = 10000  # Save the model every 10000 episodes
 gamma = 0.9
-actor_lr = 1e-3  # policy network learning rate
-critic_lr = 1e-2  # value network learning rate
-hidden_dim = 256  # hidden neural numbers
-return_list = []  # keep the return value for each rounds
+actor_lr = 1e-3  # Policy network learning rate
+critic_lr = 1e-2  # Value network learning rate
+hidden_dim = 256  # Hidden neural numbers
+return_list = []  # Keep the return value for each round
+plot_interval = 100  # Plot the return every 1000 episodes
 
 # environment load
 env = poolenv()
-state_dim = (4, 19, 39)
-action_dim = 15 * 6 * 3 * 3
+state_dim = (5, 17, 37)
+action_dim = 15 * 6 * 7 * 3
 
 # Model Initialization
 agent = ActorCritic(in_channels=state_dim[0],
@@ -103,6 +106,17 @@ agent = ActorCritic(in_channels=state_dim[0],
                     critic_lr=critic_lr,
                     gamma=gamma,
                     device=device)
+
+# Load existing model if available
+start_episode = 0
+if os.path.exists('checkpoint.pth'):
+    checkpoint = torch.load('checkpoint.pth')
+    agent.load_state_dict(checkpoint['model_state_dict'])
+    start_episode = checkpoint['episode']
+    return_list = checkpoint['return_list']
+    print(f'Resuming training from episode {start_episode}')
+else:
+    print('First time Training')
 
 for i in range(num_episode):
     state = env.reset()
@@ -137,17 +151,34 @@ for i in range(num_episode):
         state = next_state
         last_action = action
         episode_return += reward
-        if episode_return <= -4000:
+        if episode_return <= -400:
             done = True
 
     return_list.append(episode_return)
     agent.update(transition_dict)
 
-    print(f'iter: {i}, return: {np.mean(return_list[-10:])}')
+    print(f'iter: {i}, current turn: {episode_return}, return: {np.mean(return_list[-10:])}')
+
+    if (i + 1) % plot_interval == 0:
+        plt.plot(return_list)
+        plt.title('Return over time')
+        plt.xlabel('Episode')
+        plt.ylabel('Return')
+        plt.show()
+
+    if (i + 1) % save_interval == 0:
+        torch.save({
+            'episode': i + 1,
+            'model_state_dict': agent.state_dict(),
+            'return_list': return_list
+        }, 'checkpoint.pth')
+        print(f'Saved model at episode {i + 1}')
 
 env.close()
 
 # Plot results
 plt.plot(return_list)
 plt.title('Return over time')
+plt.xlabel('Episode')
+plt.ylabel('Return')
 plt.show()
