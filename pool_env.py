@@ -92,11 +92,11 @@ class poolenv:
     #     return combined_matrix
 
     def _get_state(self):
-        matrix_stripes = np.zeros((37, 17), dtype=int)
-        matrix_solid = np.zeros((37, 17), dtype=int)
-        matrix_black = np.zeros((37, 17), dtype=int)
-        matrix_player = np.zeros((37, 17), dtype=int)
-        matrix_white = np.zeros((37, 17), dtype=int)
+        matrix_stripes = np.zeros((38, 18), dtype=int)
+        matrix_solid = np.zeros((38, 18), dtype=int)
+        matrix_black = np.zeros((38, 18), dtype=int)
+        matrix_player = np.zeros((38, 18), dtype=int)
+        matrix_white = np.zeros((38, 18), dtype=int)
 
         if self.game.ball_assignment is not None and self.game.ball_assignment[self.game.current_player] == BallType.Striped:
             matrix_player[:, :] = 0
@@ -110,14 +110,14 @@ class poolenv:
 
             if ball.number > 8:
                 matrix_stripes[x_unit, y_unit] = ball.number * 10
-            elif ball.number < 8 and ball.num != 0:
+            elif ball.number < 8 and ball.number != 0:
                 matrix_solid[x_unit, y_unit] = ball.number * 10
             elif ball.number == 8:
                 matrix_black[x_unit, y_unit] = ball.number
             elif ball.number == 0:
                 matrix_white[x_unit, y_unit] = 10
 
-        combined_matrix = np.stack((matrix_stripes, matrix_solid, matrix_black, matrix_player), axis=-1)
+        combined_matrix = np.stack((matrix_stripes, matrix_solid, matrix_black, matrix_player, matrix_white), axis=-1)
 
         # Replace NaNs with zeros
         combined_matrix = np.nan_to_num(combined_matrix, nan=0)
@@ -133,26 +133,50 @@ class poolenv:
         reward = 0
         if penalize == True:
             reward -= 10
+            # print('penalty')
         if self.game.is_game_over:
-            if self.game.current_player == gamestate.Player.Player1:
-                if p1_won:
-                    return 2000
-                else:
-                    return -2000
+            print(f'Player {self.game.current_player}')
+            print(f'p1 win {p1_won}')
+            if self.game.current_player == gamestate.Player.Player1 and p1_won:
+                print('win')
+                return 200
+            elif self.game.current_player == gamestate.Player.Player2 and self.game.p2_win:
+                print('win')
+                return 200
             else:
-                if not p1_won:
-                    return 2000
-                else:
-                    return -2000
+                print('lose')
+                return -2000
+            # if not self.game.potting_8ball[self.game.current_player]:
+            #     print('lose 8 ball in!!')
+            #     return -2000
+            # elif self.game.current_player == gamestate.Player.Player1:
+            #     if p1_won:
+            #         print('win')
+            #         return 2000            
+            #     else:
+            #         print('lose')
+            #         return -2000
+            # else:
+            #     if not p1_won:
+            #         print('win')
+            #         return 2000
+            #     else:
+            #         print('lose')
+            #         return -2000
         else:
             target_type = self.game.get_player_ball_type(self.game.current_player)
-            for prev_ball in self.prev_balls:
-                if prev_ball.number not in [ball.number for ball in self.game.balls]:
-                    # Ball was potted
-                    if (target_type == "Striped" and prev_ball.number > 8) or (target_type == "Solid" and prev_ball.number < 8):
-                        reward += 500  # Correct ball type potted
-                    else:
-                        reward -= 5  # Incorrect ball type potted
+            # print(f'target type {target_type}')
+            # print(f"balls in the list {len(self.game.balls)}\n")
+            # print(f"Previous balls in the list {len(self.prev_balls)}\n")
+            print(f'potted balls {self.game.last_potted_balls}')
+            for potted_ball in self.game.last_potted_balls:
+                
+                if (target_type == "Striped" and potted_ball > 8) or (target_type == "Solid" and potted_ball < 8):
+                    reward += 20  # Correct ball type potted
+                    # print('correct ball potted')
+                else:
+                    reward -= 5  # Incorrect ball type potted
+                    # print('wrong ball potted')
             
             return reward
                 

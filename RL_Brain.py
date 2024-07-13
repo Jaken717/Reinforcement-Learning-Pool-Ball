@@ -101,7 +101,7 @@ class ActorCritic:
 
         # Check for NaNs and handle them
         if torch.any(torch.isnan(probs)):
-            print("NaNs detected in action probabilities.")
+            # print("NaNs detected in action probabilities.")
             probs = torch.nan_to_num(probs, nan=1e-6)
 
         # Clamp values to avoid numerical issues
@@ -150,9 +150,9 @@ class ActorCritic:
         states = states.permute(0, 3, 1, 2)  # Rearrange dimensions to [batch_size, channels, height, width]
         next_states = next_states.permute(0, 3, 1, 2)  # Rearrange dimensions to [batch_size, channels, height, width]
 
-        print(f"States shape: {states.shape}")
-        print(f"Actions shape: {actions.shape}")
-        print(f"Actions values: {actions}")
+        # print(f"States shape: {states.shape}")
+        # print(f"Actions shape: {actions.shape}")
+        # print(f"Actions values: {actions}")
 
         # Ensure actions are within valid range
         actions = torch.clamp(actions, 0, states.shape[1] - 1)
@@ -161,12 +161,12 @@ class ActorCritic:
         td_target = rewards + self.gamma * self.critic(next_states) * (1 - dones)
         td_delta = td_target - td_value
 
-        print(f"TD Value shape: {td_value.shape}")
-        print(f"TD Target shape: {td_target.shape}")
-        print(f"TD Delta shape: {td_delta.shape}")
+        # print(f"TD Value shape: {td_value.shape}")
+        # print(f"TD Target shape: {td_target.shape}")
+        # print(f"TD Delta shape: {td_delta.shape}")
 
         log_probs = torch.log(self.actor(states).gather(1, actions))
-        print(f"log_probs shape: {log_probs.shape}")
+        # print(f"log_probs shape: {log_probs.shape}")
 
         actor_loss = torch.mean(-log_probs * td_delta.detach())
         critic_loss = torch.mean(F.mse_loss(self.critic(states), td_target.detach()))

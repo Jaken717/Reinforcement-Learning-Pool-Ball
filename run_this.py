@@ -3,7 +3,7 @@
 # Content: Operation Script for Reinforcement Learning
 # Author: JK Liu
 ###############################################################
-import pool_env
+# import pool_env
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -89,11 +89,11 @@ actor_lr = 1e-3  # Policy network learning rate
 critic_lr = 1e-2  # Value network learning rate
 hidden_dim = 256  # Hidden neural numbers
 return_list = []  # Keep the return value for each round
-plot_interval = 100  # Plot the return every 1000 episodes
+plot_interval = 1000  # Plot the return every 1000 episodes
 
 # environment load
 env = poolenv()
-state_dim = (5, 17, 37)
+state_dim = (5, 18, 38)
 action_dim = 15 * 6 * 7 * 3
 
 # Model Initialization
@@ -142,6 +142,7 @@ for i in range(num_episode):
         action = calibrate_by_rule(action=action, last_action=last_action, game_state=env.game)
         action_number = revise_action_number(action=action)
         # print(f"action number is {action_number}")
+        print(f'current value: {episode_return}')
         next_state, reward, done = env.step(action)
         transition_dict['states'].append(state)
         transition_dict['actions'].append(int(action_number))  # Ensure action_number is an integer
@@ -164,7 +165,9 @@ for i in range(num_episode):
         plt.title('Return over time')
         plt.xlabel('Episode')
         plt.ylabel('Return')
-        plt.show()
+        plot_filename = os.path.join('training_set_1', f'return_plot_{(i + 1) // plot_interval}.png')
+        plt.savefig(plot_filename)
+        plt.close() 
 
     if (i + 1) % save_interval == 0:
         torch.save({
@@ -172,7 +175,7 @@ for i in range(num_episode):
             'model_state_dict': agent.state_dict(),
             'return_list': return_list
         }, 'checkpoint.pth')
-        print(f'Saved model at episode {i + 1}')
+        print(f'Saved model at episode {(i + 1) // plot_interval}')
 
 env.close()
 
