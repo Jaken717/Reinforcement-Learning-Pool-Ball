@@ -10,6 +10,8 @@ import torch
 from pool_env import poolenv
 from RL_Brain import ActorCritic
 from RL_Brain import poolaction
+from PPO import PPO
+
 import random
 import gamestate
 from ball import BallType
@@ -97,15 +99,27 @@ state_dim = (5, 18, 38)
 action_dim = 15 * 6 * 7 * 3
 
 # Model Initialization
-agent = ActorCritic(in_channels=state_dim[0],
-                    height=state_dim[1],
-                    width=state_dim[2],
-                    n_hiddens=hidden_dim,
-                    n_actions=action_dim,
-                    actor_lr=actor_lr,
-                    critic_lr=critic_lr,
-                    gamma=gamma,
-                    device=device)
+# agent = ActorCritic(in_channels=state_dim[0],
+#                     height=state_dim[1],
+#                     width=state_dim[2],
+#                     n_hiddens=hidden_dim,
+#                     n_actions=action_dim,
+#                     actor_lr=actor_lr,
+#                     critic_lr=critic_lr,
+#                     gamma=gamma,
+#                     device=device)
+agent = PPO(in_channels=state_dim[0],
+            height=state_dim[1],
+            width=state_dim[2],
+            n_hiddens=hidden_dim,
+            n_actions=action_dim,
+            actor_lr=actor_lr,
+            critic_lr=critic_lr,
+            lmbda=0.95,
+            epochs=10,
+            eps=0.2,
+            gamma=gamma,
+            device=device)
 
 # Load existing model if available
 start_episode = 0
