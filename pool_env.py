@@ -122,6 +122,8 @@ class poolenv:
         # Replace NaNs with zeros
         combined_matrix = np.nan_to_num(combined_matrix, nan=0)
 
+        combined_matrix = np.transpose(combined_matrix, (2, 1, 0))
+
         return combined_matrix
 
     
@@ -168,7 +170,7 @@ class poolenv:
             # print(f'target type {target_type}')
             # print(f"balls in the list {len(self.game.balls)}\n")
             # print(f"Previous balls in the list {len(self.prev_balls)}\n")
-            print(f'potted balls {self.game.last_potted_balls}')
+            # print(f'potted balls {self.game.last_potted_balls}')
             for potted_ball in self.game.last_potted_balls:
                 
                 if (target_type == "Striped" and potted_ball > 8) or (target_type == "Solid" and potted_ball < 8):

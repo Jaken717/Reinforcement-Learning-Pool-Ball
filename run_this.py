@@ -8,8 +8,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 from pool_env import poolenv
-from RL_Brain import ActorCritic
-from RL_Brain import poolaction
+# from RL_Brain import ActorCritic
+from PPO import poolaction
 from PPO import PPO
 
 import random
@@ -18,19 +18,24 @@ from ball import BallType
 import os
 
 def revise_action_number(action):
-    i = 0
-    for tb in range(15):
-        for th in range(6):
-            for a in range(7):
-                for p in range(3):
-                    i += 1
-                    angle_val = {0: -3, 1: -2, 2: -1, 3: 0, 4: 1, 5: 2, 6: 3}.get(a)
-                    power_val = {0: 3, 1: 5, 2: 7}.get(p)
-                    if (action.target_ball == tb + 1 and
-                        action.target_hole == th and
-                        action.angle == angle_val and
-                        action.power == power_val):
-                        return i
+    action_ball = action.target_ball - 1
+    action_pocket = action.target_hole
+    action_angle = {-3:0, -2:1, -1:2, 0:3, 1:4, 2:5, 3:6}.get(action.angle)
+    action_power = {3:0, 5:1, 7:2}.get(action.power)
+    return action_ball, action_pocket, action_angle, action_power
+    # i = 0
+    # for tb in range(15):
+    #     for th in range(6):
+    #         for a in range(7):
+    #             for p in range(3):
+    #                 i += 1
+    #                 angle_val = {0: -3, 1: -2, 2: -1, 3: 0, 4: 1, 5: 2, 6: 3}.get(a)
+    #                 power_val = {0: 3, 1: 5, 2: 7}.get(p)
+    #                 if (action.target_ball == tb + 1 and
+    #                     action.target_hole == th and
+    #                     action.angle == angle_val and
+    #                     action.power == power_val):
+    #                     return i
 
 def calibrate_by_rule(action, last_action, game_state):
     ball_found = False
@@ -96,7 +101,7 @@ plot_interval = 1000  # Plot the return every 1000 episodes
 # environment load
 env = poolenv()
 state_dim = (5, 18, 38)
-action_dim = 15 * 6 * 7 * 3
+# action_dim = 15 * 6 * 7 * 3
 
 # Model Initialization
 # agent = ActorCritic(in_channels=state_dim[0],
@@ -112,7 +117,10 @@ agent = PPO(in_channels=state_dim[0],
             height=state_dim[1],
             width=state_dim[2],
             n_hiddens=hidden_dim,
-            n_actions=action_dim,
+            balls= 15,
+            pockets=6,
+            angles=7,
+            powers=3,
             actor_lr=actor_lr,
             critic_lr=critic_lr,
             lmbda=0.95,
@@ -134,43 +142,59 @@ else:
 
 for i in range(num_episode):
     state = env.reset()
+    # print(f"shape of state {state.shape}")
     done = False
     episode_return = 0
 
     transition_dict = {
         'states': [],
-        'actions': [],
+        'action_ball': [],
+        'action_pocket': [],
+        'action_angle': [],
+        'action_power': [],
         'next_states': [],
         'rewards': [],
         'dones': [],
     }
 
     last_action = poolaction(target_ball=0, target_hole=0, angle=0, power=0)
+    j = 0
 
     while not done:
-        action, action_number = agent.take_action(state=state)
+        action, action_ball, action_pocket, action_angle, action_power = agent.take_action(state=state)
         # print(f"action number choice is {action_number}")
         # print(f"Action choice: {action.target_ball}, {action.target_hole}, {action.angle}, {action.power}")
         # print(f"prev Action taken: {last_action.target_ball}, {last_action.target_hole}, {last_action.angle}, {last_action.power}")
         # print(f"Action taken: {action.target_ball}, {action.target_hole}, {action.angle}, {action.power}")
         action = calibrate_by_rule(action=action, last_action=last_action, game_state=env.game)
-        action_number = revise_action_number(action=action)
+        action_ball, action_pocket, action_angle, action_power = revise_action_number(action=action)
         # print(f"action number is {action_number}")
-        print(f'current value: {episode_return}')
+        # print(f'current value: {episode_return}')
         next_state, reward, done = env.step(action)
+        next_state = torch.tensor(next_state).float().to(device)
+        # print(f"Next state shape after step: {next_state.shape}")
         transition_dict['states'].append(state)
-        transition_dict['actions'].append(int(action_number))  # Ensure action_number is an integer
+        transition_dict['action_ball'].append(int(action_ball))  # Ensure action_number is an integer
+        transition_dict['action_pocket'].append(int(action_pocket))
+        transition_dict['action_angle'].append(int(action_angle))
+        transition_dict['action_power'].append(int(action_power))
         transition_dict['next_states'].append(next_state)
         transition_dict['rewards'].append(reward)
         transition_dict['dones'].append(done)
         state = next_state
         last_action = action
         episode_return += reward
+        j += 1
+        if j == 5:
+            done = True
         if episode_return <= -400:
             done = True
 
+    print(f"size of next states {len(transition_dict['next_states'])}")
+    for h, state in enumerate(transition_dict['next_states']):
+        print(f"Shape of element {h} in next_states: {state.shape}")
     return_list.append(episode_return)
-    agent.update(transition_dict)
+    agent.learn(transition_dict)
 
     print(f'iter: {i}, current turn: {episode_return}, return: {np.mean(return_list[-10:])}')
 
